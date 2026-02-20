@@ -130,6 +130,10 @@ CONFIG = {
         'data_csv': os.path.join(root_dir, 'data', 'training_data.xlsx'),
         'human_codes': os.path.join(root_dir, 'data', 'human_codes.xlsx'),
         'coding_scheme': os.path.join(root_dir, 'data', 'DOC_coding_scheme', 'coding_scheme_imported.yml'),
+        'coding_scheme_fallbacks': [
+            os.path.join(root_dir, 'data', 'DOC_coding_scheme', 'coding_scheme_imported.yml'),
+            os.path.join(root_dir, 'data', 'coding_scheme.yml'),
+        ],
         'prompt_template': os.path.join(root_dir, 'data', 'prompt.txt'),
         'output_base': os.path.join(root_dir, 'data', 'results'),
         'log_dir': os.path.join(root_dir, 'data', 'log')
@@ -303,61 +307,52 @@ def index():
     
     # Get the coding scheme path from session, or use default if not set
     coding_scheme_path = session.get('coding_scheme_path', CONFIG['paths']['coding_scheme'])
+    # Clear stale session path if file no longer exists (e.g. temp file cleaned up)
+    if 'coding_scheme_path' in session and not os.path.exists(coding_scheme_path):
+        session.pop('coding_scheme_path', None)
+        coding_scheme_path = CONFIG['paths']['coding_scheme']
+    # Build list of paths to try: session/default first, then fallbacks
+    paths_to_try = [coding_scheme_path]
+    for p in CONFIG['paths'].get('coding_scheme_fallbacks', []):
+        if p not in paths_to_try:
+            paths_to_try.append(p)
     logger.info("Loading coding scheme", extra={
         'path': coding_scheme_path,
         'file_exists': os.path.exists(coding_scheme_path),
-        'is_default': coding_scheme_path == CONFIG['paths']['coding_scheme'],
-        'is_session_path': 'coding_scheme_path' in session,
-        'file_size': os.path.getsize(coding_scheme_path) if os.path.exists(coding_scheme_path) else 0,
-        'file_mtime': datetime.fromtimestamp(os.path.getmtime(coding_scheme_path)).strftime('%Y-%m-%d %H:%M:%S') if os.path.exists(coding_scheme_path) else None
+        'paths_to_try': paths_to_try,
+        'session_id': session_id
     })
-    
-    try:
-        with open(coding_scheme_path, 'r', encoding='utf-8') as file:
-            scheme = yaml.safe_load(file)
-            # Log the first few categories to verify content
-            categories = scheme.get('coding_scheme', {}).get('categories', {})
-            first_categories = dict(list(categories.items())[:3])  # Get first 3 categories
-            logger.info("Coding scheme content sample", extra={
-                'first_categories': first_categories,
-                'total_categories': len(categories),
-                'path_used': coding_scheme_path,
-                'session_id': session_id
-            })
-            
-            # Filter categories
-            filtered_scheme = filter_categories(scheme)
-            logger.info("Categories loaded successfully", extra={
-                'total_categories': len(filtered_scheme),
-                'path_used': coding_scheme_path,
-                'session_id': session_id
-            })
-            return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
-    except Exception as e:
-        logger.error("Error loading coding scheme", extra={
-            'error': str(e),
-            'path': coding_scheme_path,
-            'session_id': session_id
-        })
-        # Try default file if the current one fails
-        default_path = CONFIG['paths']['coding_scheme']
+    last_error = None
+    for path in paths_to_try:
         try:
-            with open(default_path, 'r', encoding='utf-8') as file:
+            with open(path, 'r', encoding='utf-8') as file:
                 scheme = yaml.safe_load(file)
-                filtered_scheme = filter_categories(scheme)
-                logger.info("Loaded default coding scheme", extra={
+            if not scheme:
+                continue
+            categories = scheme.get('coding_scheme', {}).get('categories', {})
+            if not categories:
+                continue
+            filtered_scheme = filter_categories(scheme)
+            if filtered_scheme:
+                logger.info("Categories loaded successfully", extra={
                     'total_categories': len(filtered_scheme),
-                    'path_used': default_path,
+                    'path_used': path,
                     'session_id': session_id
                 })
                 return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
         except Exception as e:
-            logger.error("Error loading default coding scheme", extra={
+            last_error = e
+            logger.warning("Failed to load coding scheme from path", extra={
+                'path': path,
                 'error': str(e),
-                'path': default_path,
                 'session_id': session_id
             })
-            return render_template('index.html', categories={}, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
+    logger.error("Could not load coding scheme from any path", extra={
+        'error': str(last_error) if last_error else 'No valid scheme found',
+        'paths_tried': paths_to_try,
+        'session_id': session_id
+    })
+    return render_template('index.html', categories={}, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
