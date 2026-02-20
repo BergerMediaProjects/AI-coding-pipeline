@@ -190,6 +190,12 @@
                     <!-- Category Selection -->
                     <div class="mb-3">
                         <label class="form-label">Select Categories</label>
+                        {% if categories_error %}
+                        <div class="alert alert-warning" role="alert">
+                            {{ categories_error }}
+                            <br><small>Ensure data/DOC_coding_scheme/coding_scheme_imported.yml exists, or upload a coding scheme (DOCX).</small>
+                        </div>
+                        {% endif %}
                         <div class="row" id="categoryList">
                             {% for category, details in categories.items() %}
                             <div class="col-md-4">

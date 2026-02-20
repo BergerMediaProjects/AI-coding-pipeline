@@ -339,7 +339,7 @@ def index():
                     'path_used': path,
                     'session_id': session_id
                 })
-                return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
+                return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")), categories_error=None)
         except Exception as e:
             last_error = e
             logger.warning("Failed to load coding scheme from path", extra={
@@ -352,7 +352,25 @@ def index():
         'paths_tried': paths_to_try,
         'session_id': session_id
     })
-    return render_template('index.html', categories={}, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
+    return render_template('index.html', categories={}, api_key_configured=bool(os.getenv("OPENAI_API_KEY")),
+                           categories_error=f"Could not load categories. Paths tried: {paths_to_try}. Error: {last_error}")
+
+@app.route('/debug-categories')
+def debug_categories():
+    """Diagnostic endpoint: returns paths and file existence for category loading."""
+    paths = [CONFIG['paths']['coding_scheme']] + CONFIG['paths'].get('coding_scheme_fallbacks', [])
+    paths = list(dict.fromkeys(paths))  # dedupe
+    results = []
+    for p in paths:
+        try:
+            with open(p, 'r', encoding='utf-8') as f:
+                scheme = yaml.safe_load(f)
+            cats = scheme.get('coding_scheme', {}).get('categories', {}) if scheme else {}
+            filtered = filter_categories(scheme) if scheme else {}
+            results.append({'path': p, 'exists': True, 'categories': len(cats), 'filtered': len(filtered)})
+        except Exception as e:
+            results.append({'path': p, 'exists': os.path.exists(p), 'error': str(e)})
+    return jsonify({'root_dir': root_dir, 'paths': results})
 
 @app.route('/upload', methods=['POST'])
 def upload_file():

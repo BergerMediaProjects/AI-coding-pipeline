@@ -6,7 +6,10 @@ services:
     ports:
       - "5001:5001"
     volumes:
-      - ./data:/app/data
+      # Mount only subdirs that need to persist - preserves coding_scheme & sample data from image
+      - ./data/results:/app/data/results
+      - ./data/log:/app/data/log
+      - ./data/temp_uploads:/app/data/temp_uploads
     environment:
       - FLASK_ENV=development
       - FLASK_RUN_HOST=0.0.0.0
