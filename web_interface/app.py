@@ -3,6 +3,10 @@ import os
 import shutil
 import asyncio
 import sys
+import warnings
+
+# Suppress harmless multiprocessing cleanup warning (from sklearn/joblib) at shutdown
+warnings.filterwarnings('ignore', message='resource_tracker: There appear to be .* leaked semaphore')
 import yaml
 import glob
 import time
