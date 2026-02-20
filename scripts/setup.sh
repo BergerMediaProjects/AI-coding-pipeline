@@ -42,6 +42,11 @@ if [ ! -f "data/training_data_sample.xlsx" ]; then
     python scripts/generate_sample_data.py
 fi
 
+# Remove quarantine so macOS allows double-clicking start.command (avoids Gatekeeper warning)
+if [ "$(uname)" = "Darwin" ] && [ -f "start.command" ]; then
+    xattr -d com.apple.quarantine start.command 2>/dev/null || true
+fi
+
 echo ""
 echo "=== Setup complete ==="
 echo "Next steps:"

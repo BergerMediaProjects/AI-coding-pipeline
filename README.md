@@ -343,12 +343,17 @@ Common issues and solutions:
    - Ensure input files are in the correct locations
    - Verify file permissions
 
-5. **YAML Validation Errors**
+5. **"Apple could not verify start.command is free of malware" (Mac)**
+   - Run setup again: `bash scripts/setup.sh` (it removes the quarantine flag)
+   - Or manually: `xattr -d com.apple.quarantine start.command`
+   - Then right-click start.command → Open, or double-click again
+
+6. **YAML Validation Errors**
    - Run the YAML validator
    - Check for proper indentation
    - Verify all required fields are present
 
-6. **Classification Issues**
+7. **Classification Issues**
    - Review the prompt.txt file
    - Adjust category criteria if needed
    - Add more specific examples to the coding scheme
