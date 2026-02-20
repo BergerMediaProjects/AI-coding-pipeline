@@ -38,7 +38,6 @@ This pipeline helps researchers and educators analyze course descriptions to ide
 1. **Automated Course Analysis**
    - Analyze large numbers of course descriptions automatically
    - Classify courses according to digital competence categories
-   - Get consistent and objective classifications
    - Save time compared to manual coding
 
 2. **Flexible Category System**
