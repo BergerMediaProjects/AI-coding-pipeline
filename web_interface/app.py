@@ -241,6 +241,26 @@ def get_category_sort_key(display_name):
     except Exception:
         return (999, 999, 999, '')
 
+def is_parent_category_2x(display_name):
+    """True if this is a 2.x section header (e.g. 2.1, 2.2) - not selectable. 2.0a and 2.0b are selectable."""
+    if not display_name:
+        return False
+    parts = str(display_name).split()
+    if not parts:
+        return False
+    numeric_prefix = parts[0]
+    # Non-selectable: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6 (section headers only)
+    # Selectable: 2.0a, 2.0b, 2.0.1, 2.1.1, etc.
+    if not numeric_prefix.startswith('2.'):
+        return False
+    if numeric_prefix.count('.') >= 2:
+        return False  # 2.0.1 etc. are selectable
+    # 2.0a, 2.0b have letter suffix -> selectable
+    if any(c.isalpha() for c in numeric_prefix[2:]):
+        return False
+    # 2.1, 2.2, 2.3, 2.4, 2.5, 2.6 -> non-selectable
+    return len(numeric_prefix) >= 3 and numeric_prefix[2:].isdigit()
+
 def filter_categories(scheme):
     """Filter categories based on specific criteria"""
     filtered_scheme = {}
@@ -296,31 +316,6 @@ def filter_categories(scheme):
     
     return filtered_scheme
 
-def get_category_children(filtered_scheme):
-    """Build mapping of parent category key -> list of child category keys (by numeric prefix).
-    E.g. '2.1 Berufliches Engagement' -> ['2.1.1 Organisatorische Kommunikation', ...]"""
-    key_to_prefix = {}
-    for key, details in filtered_scheme.items():
-        display_name = details.get('display_name', key)
-        if not display_name:
-            continue
-        parts = display_name.split()
-        if not parts:
-            continue
-        prefix = parts[0]
-        if any(c.isdigit() for c in prefix):
-            key_to_prefix[key] = prefix
-
-    category_children = {}
-    for parent_key, parent_prefix in key_to_prefix.items():
-        children = [
-            k for k, p in key_to_prefix.items()
-            if p != parent_prefix and p.startswith(parent_prefix + ".")
-        ]
-        if children:
-            category_children[parent_key] = children
-    return category_children
-
 @app.route('/')
 def index():
     # Log session information
@@ -359,14 +354,12 @@ def index():
                 continue
             filtered_scheme = filter_categories(scheme)
             if filtered_scheme:
-                category_children = get_category_children(filtered_scheme)
                 logger.info("Categories loaded successfully", extra={
                     'total_categories': len(filtered_scheme),
                     'path_used': path,
                     'session_id': session_id
                 })
-                return render_template('index.html', categories=filtered_scheme, category_children=category_children,
-                                       api_key_configured=bool(os.getenv("OPENAI_API_KEY")), categories_error=None)
+                return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")), categories_error=None)
         except Exception as e:
             last_error = e
             logger.warning("Failed to load coding scheme from path", extra={
@@ -379,8 +372,9 @@ def index():
         'paths_tried': paths_to_try,
         'session_id': session_id
     })
-    return render_template('index.html', categories={}, category_children={}, api_key_configured=bool(os.getenv("OPENAI_API_KEY")),
-                           categories_error=f"Could not load categories. Paths tried: {paths_to_try}. Error: {last_error}")
+    return render_template('index.html', categories={}, non_selectable_categories=set(),
+                          api_key_configured=bool(os.getenv("OPENAI_API_KEY")),
+                          categories_error=f"Could not load categories. Paths tried: {paths_to_try}. Error: {last_error}")
 
 @app.route('/debug-categories')
 def debug_categories():
@@ -629,29 +623,7 @@ async def run_pipeline():
                 }), 400
         else:
             selected_categories = []
-
-        # Exclude parent categories from analysis when their children are selected
-        # (parents like 2.1 are derived from sub-categories 2.1.1, 2.1.2, etc.)
-        try:
-            with open(config['paths']['coding_scheme'], 'r', encoding='utf-8') as f:
-                scheme = yaml.safe_load(f)
-            filtered_scheme = filter_categories(scheme) if scheme else {}
-            category_children = get_category_children(filtered_scheme)
-            selected_set = set(selected_categories)
-            categories_to_analyze = [
-                c for c in selected_categories
-                if c not in category_children or not selected_set.intersection(category_children[c])
-            ]
-            if len(categories_to_analyze) < len(selected_categories):
-                excluded = set(selected_categories) - set(categories_to_analyze)
-                logger.info("Excluded parent categories from analysis (derived from sub-categories)", extra={
-                    'excluded': list(excluded),
-                    'categories_to_analyze': categories_to_analyze
-                })
-            selected_categories = categories_to_analyze
-        except Exception as e:
-            logger.warning("Could not filter parent categories, using all selected", extra={'error': str(e)})
-
+        
         config['selected_categories'] = selected_categories
         
         # Run the pipeline with the session-specific config

@@ -199,14 +199,20 @@
                         <div class="row" id="categoryList">
                             {% for category, details in categories.items() %}
                             <div class="col-md-4">
+                                {% if category in non_selectable_categories|default([]) %}
+                                <div class="form-check">
+                                    <span class="text-muted" style="cursor: default;">{{ details.display_name }}</span>
+                                    <small class="d-block text-muted">(section header, not codable)</small>
+                                </div>
+                                {% else %}
                                 <div class="form-check">
                                     <input class="form-check-input category-checkbox" type="checkbox" 
-                                           id="category_{{ loop.index }}" name="categories" value="{{ category }}"
-                                           {% if category in category_children %}data-children="{{ category_children[category] | tojson }}"{% endif %}>
+                                           id="category_{{ loop.index }}" name="categories" value="{{ category }}">
                                     <label class="form-check-label" for="category_{{ loop.index }}">
                                         {{ details.display_name }}
                                     </label>
                                 </div>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         </div>
@@ -257,22 +263,6 @@
     <script>
         let statusPollingInterval = null;
         let isCancelled = false;
-
-        // Parent category: checking/unchecking cascades to sub-categories
-        document.getElementById('categoryList').addEventListener('change', (e) => {
-            const cb = e.target;
-            if (!cb.matches('.category-checkbox') || !cb.dataset.children) return;
-            try {
-                const childKeys = JSON.parse(cb.dataset.children);
-                document.querySelectorAll('input[name="categories"]').forEach(childCb => {
-                    if (childKeys.includes(childCb.value)) {
-                        childCb.checked = cb.checked;
-                    }
-                });
-            } catch (err) {
-                console.warn('Could not parse category children:', err);
-            }
-        });
 
         // Add restart button handler
         document.getElementById('restartButton').addEventListener('click', async () => {
