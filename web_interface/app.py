@@ -241,24 +241,32 @@ def get_category_sort_key(display_name):
     except Exception:
         return (999, 999, 999, '')
 
-def is_parent_category_2x(display_name):
-    """True if this is a 2.x section header (e.g. 2.1, 2.2) - not selectable. 2.0a and 2.0b are selectable."""
+def is_parent_category_2x(category_key, details):
+    """True if this is a 2.x section header (2.1-2.6) - not selectable. 2.0a and 2.0b are selectable."""
+    # Method 1: Check condition.range_start - section headers have range_start "2.1.1", "2.2.1", etc.
+    # (coding_scheme.yml from fix_yaml_format strips display_name, so we need this)
+    cond = details.get('condition') or {}
+    range_start = cond.get('range_start', '')
+    rs = str(range_start)
+    # Handle both "2.1.1" (string) and 2.11 (float if YAML parses 2.1.1 oddly)
+    if rs in ('2.1.1', '2.2.1', '2.3.1', '2.4.1', '2.5.1', '2.6.1'):
+        return True
+    if isinstance(range_start, (int, float)) and range_start in (2.11, 2.21, 2.31, 2.41, 2.51, 2.61):
+        return True
+    # Method 2: Check display_name prefix (coding_scheme_imported.yml keeps "2.1 Berufliches...")
+    display_name = details.get('display_name', '') or category_key
     if not display_name:
         return False
     parts = str(display_name).split()
     if not parts:
         return False
     numeric_prefix = parts[0]
-    # Non-selectable: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6 (section headers only)
-    # Selectable: 2.0a, 2.0b, 2.0.1, 2.1.1, etc.
     if not numeric_prefix.startswith('2.'):
         return False
     if numeric_prefix.count('.') >= 2:
         return False  # 2.0.1 etc. are selectable
-    # 2.0a, 2.0b have letter suffix -> selectable
     if any(c.isalpha() for c in numeric_prefix[2:]):
-        return False
-    # 2.1, 2.2, 2.3, 2.4, 2.5, 2.6 -> non-selectable
+        return False  # 2.0a, 2.0b are selectable
     return len(numeric_prefix) >= 3 and numeric_prefix[2:].isdigit()
 
 def filter_categories(scheme):
@@ -359,7 +367,10 @@ def index():
                     'path_used': path,
                     'session_id': session_id
                 })
-                return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")), categories_error=None)
+                non_selectable = {k for k, d in filtered_scheme.items() if is_parent_category_2x(k, d)}
+                return render_template('index.html', categories=filtered_scheme,
+                                       non_selectable_categories=non_selectable,
+                                       api_key_configured=bool(os.getenv("OPENAI_API_KEY")), categories_error=None)
         except Exception as e:
             last_error = e
             logger.warning("Failed to load coding scheme from path", extra={
