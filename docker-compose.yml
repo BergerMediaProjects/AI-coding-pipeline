@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - FLASK_ENV=development
+      - FLASK_RUN_HOST=0.0.0.0
+    # No OPENAI_API_KEY needed - users enter it in the web UI

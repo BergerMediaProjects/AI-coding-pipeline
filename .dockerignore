@@ -1,0 +1,10 @@
+.venv
+venv
+.git
+.env
+__pycache__
+*.pyc
+data/log/*
+data/results/*
+data/temp_uploads/*
+*.log

@@ -4,25 +4,31 @@ This pipeline analyzes course descriptions using AI to classify them according t
 
 ## Quick Start (for Researchers)
 
-**Easiest way to get started:** Use the web interface. No command line required.
+**Easiest ways to get started — minimal or no command line:**
 
-1. **Install Python** (3.8 or newer) — [python.org](https://www.python.org/downloads/)
-2. **Open a terminal** in this project folder and run:
-   ```bash
-   bash scripts/setup.sh
-   ```
-   This creates a virtual environment and installs dependencies. (On Linux, you must use a venv — system pip will not work.)
-3. **Edit `.env`** and add your OpenAI API key: `OPENAI_API_KEY=sk-your-key-here`
-4. **Start the web interface** (activate the venv first if the script didn't leave you in it):
-   ```bash
-   source .venv/bin/activate   # Linux/Mac
-   python web_interface/app.py
-   ```
-5. **Open http://127.0.0.1:5001** in your browser
-6. **Upload your files** (or use the sample data in `data/training_data_sample.xlsx` to try it first)
-7. **Select categories** and click "Run Pipeline"
+### Option 1: Docker (one command, no Python install)
+If you have [Docker Desktop](https://www.docker.com/products/docker-desktop/):
+```bash
+docker-compose up
+```
+Then open **http://127.0.0.1:5001**. Enter your OpenAI API key in the web form — no file editing needed.
 
-> **Tip:** The web interface automatically uses `data/training_data_sample.xlsx` if no data file exists. You can also upload your own Excel file.
+### Option 2: Double-click to start (after one-time setup)
+1. Run setup once:
+   - **Windows:** Double-click `scripts\setup.bat` (or run it from a terminal)
+   - **Mac/Linux:** Open a terminal, `cd` to this folder, run `bash scripts/setup.sh`
+2. After that, just **double-click**:
+   - **Windows:** `start.bat`
+   - **Mac:** `start.command`
+3. Enter your API key in the web form when prompted.
+
+### Option 3: Traditional setup
+1. Run `bash scripts/setup.sh` (or install Python + dependencies manually)
+2. Run `bash scripts/run_web.sh` (or `python web_interface/app.py`)
+3. Open http://127.0.0.1:5001
+4. **Enter your OpenAI API key in the web form** — no need to edit `.env` files.
+
+> **Tip:** You can paste your API key directly in the web interface. The sample data is used automatically if you don't upload files.
 
 ## What Can You Do With This Pipeline?
 
@@ -49,9 +55,9 @@ This pipeline helps researchers and educators analyze course descriptions to ide
 ## Setup
 
 **Option A — Quick setup (recommended for researchers):**
-```bash
-bash scripts/setup.sh
-```
+- **Windows:** Double-click `scripts\setup.bat` or run it from a terminal
+- **Mac/Linux:** Run `bash scripts/setup.sh`
+
 This creates a virtual environment, installs dependencies, and generates sample data.
 
 **Option B — Manual setup:**
@@ -63,15 +69,8 @@ source .venv/bin/activate   # Linux/Mac; on Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 3. Set up your OpenAI API key. Either:
-   - **Option A (recommended):** Copy `.env.example` to `.env` and add your key:
-     ```bash
-     cp .env.example .env
-     # Edit .env and set: OPENAI_API_KEY=your-api-key-here
-     ```
-   - **Option B:** Export as an environment variable:
-     ```bash
-     export OPENAI_API_KEY='your-api-key-here'
-     ```
+   - **Option A (recommended):** Enter it in the web interface when you run the pipeline — no file editing needed.
+   - **Option B:** Copy `.env.example` to `.env` and add your key (useful if you prefer not to type it each time).
 
 ## File Structure
 
@@ -79,8 +78,12 @@ pip install -r requirements.txt
 .
 ├── README.md
 ├── requirements.txt
+├── Dockerfile               # For Docker deployment
+├── docker-compose.yml       # One-command run: docker-compose up
+├── start.bat                # Double-click launcher (Windows)
+├── start.command            # Double-click launcher (Mac)
 ├── .env.example             # Template for environment variables
-├── run_pipeline.py     # Main pipeline script
+├── run_pipeline.py          # Main pipeline script
 ├── wsgi.py                  # WSGI entry point for production
 ├── gunicorn_config.py       # Gunicorn configuration
 ├── web_interface/           # Web UI
@@ -100,7 +103,9 @@ pip install -r requirements.txt
 │   └── results/             # Results will be saved here
 │       └── ai_coded_results_*.xlsx   # Timestamped results
 ├── scripts/
-│   ├── setup.sh             # Quick setup for researchers
+│   ├── setup.sh             # Quick setup (Mac/Linux)
+│   ├── setup.bat            # Quick setup (Windows)
+│   ├── run_web.sh           # Start web interface (activates venv)
 │   ├── generate_sample_data.py  # Create sample Excel
 │   └── verify_readme.py     # Verify README accuracy
 └── utils/

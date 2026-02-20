@@ -37,10 +37,8 @@ import re
 # Get the root directory path
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Verify API key is loaded
+# API key is loaded from env or can be provided at runtime (e.g. via web UI)
 api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("OPENAI_API_KEY not found in environment variables. Please check your .env file.")
 
 # Debug: Print environment variables
 print("\n=== Environment Variables ===")

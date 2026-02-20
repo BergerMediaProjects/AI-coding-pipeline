@@ -33,10 +33,8 @@ from utils.fix_yaml_format import fix_yaml_format
 from utils.validate_yaml import validate_yaml
 from run_pipeline import TrainingDataClassifier, CONFIG
 
-# Verify API key is loaded
+# API key can be in .env or entered in web UI
 api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("OPENAI_API_KEY not found in environment variables. Please check your .env file.")
 
 # Configure logging
 def setup_logging():
@@ -329,7 +327,7 @@ def index():
                 'path_used': coding_scheme_path,
                 'session_id': session_id
             })
-            return render_template('index.html', categories=filtered_scheme)
+            return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
     except Exception as e:
         logger.error("Error loading coding scheme", extra={
             'error': str(e),
@@ -347,14 +345,14 @@ def index():
                     'path_used': default_path,
                     'session_id': session_id
                 })
-                return render_template('index.html', categories=filtered_scheme)
+                return render_template('index.html', categories=filtered_scheme, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
         except Exception as e:
             logger.error("Error loading default coding scheme", extra={
                 'error': str(e),
                 'path': default_path,
                 'session_id': session_id
             })
-            return render_template('index.html', categories={})
+            return render_template('index.html', categories={}, api_key_configured=bool(os.getenv("OPENAI_API_KEY")))
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -459,6 +457,17 @@ async def run_pipeline():
             'error': None,
             'is_cancelled': False
         }
+        
+        # Get API key from form or use env (allows running without .env)
+        api_key = request.form.get('api_key', '').strip()
+        if api_key:
+            os.environ['OPENAI_API_KEY'] = api_key
+        if not os.getenv("OPENAI_API_KEY"):
+            pipeline_status['is_running'] = False
+            return jsonify({
+                'status': 'error',
+                'message': 'OpenAI API key required. Enter it in the field above or add OPENAI_API_KEY to your .env file.'
+            }), 400
         
         # Get uploaded files
         data_file = request.files.get('data_file')
@@ -731,4 +740,5 @@ def handle_405(error):
     }), 405
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001, host='127.0.0.1') 
+    host = '0.0.0.0' if os.getenv('FLASK_RUN_HOST') == '0.0.0.0' else '127.0.0.1'
+    app.run(debug=True, port=5001, host=host) 

@@ -163,6 +163,15 @@
             <div class="card-body">
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
+                        <label for="apiKey" class="form-label">OpenAI API Key</label>
+                        <input type="password" class="form-control" id="apiKey" name="api_key" 
+                               placeholder="sk-... (or set in .env file)" autocomplete="off">
+                        <small class="form-text text-muted">
+                            {% if api_key_configured|default(False) %}API key is set from .env. You can override it here.{% else %}
+                            <strong>Required.</strong> Paste your OpenAI API key here — no need to edit files.{% endif %}
+                        </small>
+                    </div>
+                    <div class="mb-3">
                         <label for="dataFile" class="form-label">Training Data (Excel)</label>
                         <input type="file" class="form-control" id="dataFile" name="data_file" accept=".xlsx">
                         <small class="form-text text-muted">Optional. Uses data/training_data.xlsx or data/training_data_sample.xlsx if not provided.</small>
