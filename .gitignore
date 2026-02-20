@@ -9,6 +9,8 @@ data/log/
 data/results/
 *.xlsx
 *.csv
+# Keep sample data for researchers
+!data/training_data_sample.xlsx
 
 # Temporary uploads
 data/temp_uploads/
@@ -23,6 +25,7 @@ __pycache__/
 *.egg
 
 # Virtual environment
+.venv/
 venv/
 myenv/
 ENV/

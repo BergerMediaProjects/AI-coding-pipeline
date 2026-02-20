@@ -205,7 +205,10 @@ class DataManager:
             else:  # default to CSV
                 return pd.read_csv(path)
         except FileNotFoundError:
-            raise FileNotFoundError(f"Data file not found: {path}")
+            hint = ""
+            if "training_data" in path:
+                hint = " Copy data/training_data_sample.xlsx to data/training_data.xlsx to use the sample, or upload via the web interface."
+            raise FileNotFoundError(f"Data file not found: {path}.{hint}")
         except pd.errors.EmptyDataError:
             raise ValueError(f"Data file is empty: {path}")
         except Exception as e:
@@ -1120,8 +1123,9 @@ class TrainingDataClassifier:
             
             # Load and validate resources
             dataset = await self.data_manager.load_data(self.config['paths']['data_csv'])
-            if self.config['paths'].get('human_codes'):
-                codes = await self.data_manager.load_data(self.config['paths']['human_codes'])
+            human_codes_path = self.config['paths'].get('human_codes')
+            if human_codes_path and os.path.exists(human_codes_path):
+                codes = await self.data_manager.load_data(human_codes_path)
                 dataset = await self.data_manager.merge_datasets(dataset, codes)
             
             # Load scheme
@@ -1177,22 +1181,25 @@ class TrainingDataClassifier:
         try:
             # Load files
             training_data = await self.data_manager.load_data(self.config['paths']['data_csv'])
-            human_codes = await self.data_manager.load_data(self.config['paths']['human_codes'])
             scheme = await self.resource_manager.load_scheme(self.config['paths']['coding_scheme'])
             
             # Check column presence
             print("\nValidating data consistency:")
             print("1. Training data columns:", training_data.columns.tolist())
-            print("2. Human codes columns:", human_codes.columns.tolist())
             print("3. Categories in scheme:", list(scheme.categories.keys()))
             
-            # Check matching entries
-            training_titles = set(training_data['title'])
-            human_code_titles = set(human_codes['title'])
-            if training_titles != human_code_titles:
-                print("\n⚠️ Warning: Mismatched titles between training data and human codes")
-                print("Missing in human codes:", training_titles - human_code_titles)
-                print("Extra in human codes:", human_code_titles - training_titles)
+            human_codes_path = self.config['paths'].get('human_codes')
+            if human_codes_path and os.path.exists(human_codes_path):
+                human_codes = await self.data_manager.load_data(human_codes_path)
+                print("2. Human codes columns:", human_codes.columns.tolist())
+                training_titles = set(training_data['title'])
+                human_code_titles = set(human_codes['title'])
+                if training_titles != human_code_titles:
+                    print("\n⚠️ Warning: Mismatched titles between training data and human codes")
+                    print("Missing in human codes:", training_titles - human_code_titles)
+                    print("Extra in human codes:", human_code_titles - training_titles)
+            else:
+                print("2. Human codes: not provided (optional)")
             
             return True
         except Exception as e:

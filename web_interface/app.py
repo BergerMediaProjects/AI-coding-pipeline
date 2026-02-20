@@ -35,7 +35,7 @@ sys.path.append(project_root)
 
 # Add the parent directory to the Python path
 sys.path.append(root_dir)
-from pipeline_draft1_0 import TrainingDataClassifier, CONFIG
+from run_pipeline import TrainingDataClassifier, CONFIG
 
 # Verify API key is loaded
 api_key = os.getenv("OPENAI_API_KEY")
@@ -487,7 +487,11 @@ async def run_pipeline():
                 'session_id': session.get('session_id')
             })
         else:
-            config['paths']['data_csv'] = session.get('data_csv_path', CONFIG['paths']['data_csv'])
+            default_data = CONFIG['paths']['data_csv']
+            sample_data = os.path.join(root_dir, 'data', 'training_data_sample.xlsx')
+            # Use sample data if default doesn't exist (helps researchers try without uploading)
+            data_path = session.get('data_csv_path') or (default_data if os.path.exists(default_data) else (sample_data if os.path.exists(sample_data) else default_data))
+            config['paths']['data_csv'] = data_path
             
         if coding_scheme_file:
             pipeline_status['status_message'] = 'Processing coding scheme...'

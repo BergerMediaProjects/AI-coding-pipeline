@@ -2,6 +2,27 @@
 
 This pipeline analyzes course descriptions using AI to classify them according to specific digital competence categories.
 
+## Quick Start (for Researchers)
+
+**Easiest way to get started:** Use the web interface. No command line required.
+
+1. **Install Python** (3.8 or newer) — [python.org](https://www.python.org/downloads/)
+2. **Open a terminal** in this project folder and run:
+   ```bash
+   pip install -r requirements.txt
+   cp .env.example .env
+   ```
+3. **Edit `.env`** and add your OpenAI API key: `OPENAI_API_KEY=sk-your-key-here`
+4. **Start the web interface:**
+   ```bash
+   python web_interface/app.py
+   ```
+5. **Open http://127.0.0.1:5001** in your browser
+6. **Upload your files** (or use the sample data in `data/training_data_sample.xlsx` to try it first)
+7. **Select categories** and click "Run Pipeline"
+
+> **Tip:** The web interface automatically uses `data/training_data_sample.xlsx` if no data file exists. You can also upload your own Excel file.
+
 ## What Can You Do With This Pipeline?
 
 This pipeline helps researchers and educators analyze course descriptions to identify digital competencies. Here's what you can do:
@@ -26,15 +47,28 @@ This pipeline helps researchers and educators analyze course descriptions to ide
 
 ## Setup
 
+**Option A — Quick setup (recommended for researchers):**
+```bash
+bash scripts/setup.sh
+```
+This creates a virtual environment, installs dependencies, and generates sample data.
+
+**Option B — Manual setup:**
 1. Clone the repository
 2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-3. Set up your OpenAI API key as an environment variable:
-```bash
-export OPENAI_API_KEY='your-api-key-here'
-```
+3. Set up your OpenAI API key. Either:
+   - **Option A (recommended):** Copy `.env.example` to `.env` and add your key:
+     ```bash
+     cp .env.example .env
+     # Edit .env and set: OPENAI_API_KEY=your-api-key-here
+     ```
+   - **Option B:** Export as an environment variable:
+     ```bash
+     export OPENAI_API_KEY='your-api-key-here'
+     ```
 
 ## File Structure
 
@@ -42,23 +76,37 @@ export OPENAI_API_KEY='your-api-key-here'
 .
 ├── README.md
 ├── requirements.txt
-├── pipeline_draft1_0.py     # Main pipeline script
+├── .env.example             # Template for environment variables
+├── run_pipeline.py     # Main pipeline script
+├── wsgi.py                  # WSGI entry point for production
+├── gunicorn_config.py       # Gunicorn configuration
+├── web_interface/           # Web UI
+│   ├── app.py               # Flask application
+│   └── templates/
+│       └── index.html
 ├── data/
 │   ├── training_data.xlsx   # Course descriptions
+│   ├── training_data_sample.xlsx  # Sample data (try this first)
 │   ├── human_codes.xlsx     # Optional human-coded data
 │   ├── coding_scheme.yml    # Active coding scheme (used by pipeline)
 │   ├── prompt.txt           # GPT prompt template
 │   ├── DOC_coding_scheme/   # Directory for coding scheme documents
-│   │   ├── doc_cs.docx      # Word document with coding scheme
+│   │   ├── doc_cs.docx      # Word document with coding scheme (user-provided)
 │   │   └── coding_scheme_imported.yml  # Generated YAML scheme
 │   ├── log/                 # Log files directory
 │   └── results/             # Results will be saved here
 │       └── ai_coded_results_*.xlsx   # Timestamped results
+├── scripts/
+│   ├── setup.sh             # Quick setup for researchers
+│   ├── generate_sample_data.py  # Create sample Excel
+│   └── verify_readme.py     # Verify README accuracy
 └── utils/
     ├── validate_yaml.py     # YAML validation script
     ├── yaml_generator.py   # Converts Word docs to YAML
     └── fix_yaml_format.py  # Cleans up YAML format
 ```
+
+**Note:** `training_data.xlsx` and `doc_cs.docx` are not included by default. Use `data/training_data_sample.xlsx` to try the pipeline, or provide your own files. Run `python scripts/generate_sample_data.py` to create the sample Excel if needed.
 
 ## Workflow
 
@@ -66,13 +114,13 @@ export OPENAI_API_KEY='your-api-key-here'
    ```bash
    python utils/yaml_generator.py
    ```
-   This creates `DOC_coding_scheme/coding_scheme_imported.yml`
+   This creates `data/DOC_coding_scheme/coding_scheme_imported.yml` (requires `doc_cs.docx` in that folder)
 
 2. **Fix YAML formatting**
    ```bash
    python utils/fix_yaml_format.py
    ```
-   This creates `coding_scheme.yml`. Copy it to `data/coding_scheme.yml` for the pipeline.
+   This creates `coding_scheme.yml` in the project root. Copy it to `data/coding_scheme.yml` for the pipeline.
 
 3. **Validate YAML structure**
    ```bash
@@ -82,9 +130,32 @@ export OPENAI_API_KEY='your-api-key-here'
 
 4. **Run the pipeline**
    ```bash
-   python pipeline_draft1_0.py
+   python run_pipeline.py
    ```
    This uses `data/coding_scheme.yml`
+
+## Web Interface
+
+You can run the pipeline through a web UI instead of the command line.
+
+**Start the web server:**
+```bash
+python web_interface/app.py
+```
+
+Then open **http://127.0.0.1:5001** in your browser.
+
+**Features:**
+- Upload coding scheme (YAML), prompt template, and input data (Excel)
+- Run the pipeline with live progress updates
+- Cancel a running pipeline
+- Download results
+
+**Production (optional):** For a production deployment, use Gunicorn:
+```bash
+gunicorn -c gunicorn_config.py wsgi:app
+```
+This serves the app on http://127.0.0.1:8000.
 
 ## Available Scripts
 
@@ -125,7 +196,7 @@ python utils/fix_yaml_format.py
 - Ensures UTF-8 encoding
 
 **Input:**
-- Reads from: `DOC_coding_scheme/coding_scheme_imported.yml`
+- Reads from: `data/DOC_coding_scheme/coding_scheme_imported.yml`
 
 **Output:**
 - Creates: `coding_scheme.yml` in the root directory
@@ -160,20 +231,20 @@ Validates the coding scheme structure.
 
 **Usage:**
 ```bash
-python utils/validate_yaml.py
+python utils/validate_yaml.py [path]
 ```
 
-**Default Paths:**
-- If no path is provided, it looks for `coding_scheme.yml` in the root directory
-- This is the same file that `fix_yaml_format.py` creates as output
+**Paths:**
+- Pass a path to validate: `python utils/validate_yaml.py data/coding_scheme.yml`
+- If no path is provided, it looks for `coding_scheme.yml` in the current directory
 
-### 4. Main Pipeline (`pipeline_draft1_0.py`)
+### 4. Main Pipeline (`run_pipeline.py`)
 
 The primary script for analyzing course descriptions.
 
 **Usage:**
 ```bash
-python pipeline_draft1_0.py
+python run_pipeline.py
 ```
 
 **Input Requirements:**
@@ -202,6 +273,20 @@ The pipeline automatically transforms certain values in the output:
 - "Ja", "Ja (1)", "(1)" → "1"
 - "Nein", "Nein (0)", "(0)" → "0"
 
+## Input Data Format
+
+Your course data file (Excel or CSV) must have these columns:
+
+| Column       | Required | Description                          |
+|--------------|----------|--------------------------------------|
+| `title`      | Yes      | Course title                         |
+| `description`| Yes      | Full course description text         |
+
+**Example** (see `data/training_data_sample.xlsx`):
+| title | description |
+|-------|-------------|
+| Einführung in digitale Lehre | In diesem Seminar lernen Sie... |
+
 ## Best Practices
 
 1. **Input Data**
@@ -223,17 +308,22 @@ The pipeline automatically transforms certain values in the output:
 
 Common issues and solutions:
 
-1. **File Not Found Errors**
+1. **"Data file not found"**
+   - Use the sample: copy `data/training_data_sample.xlsx` to `data/training_data.xlsx`
+   - Or upload your file via the web interface
+   - Ensure your Excel/CSV has `title` and `description` columns
+
+2. **File Not Found Errors**
    - Check if all required directories exist
    - Ensure input files are in the correct locations
    - Verify file permissions
 
-2. **YAML Validation Errors**
+3. **YAML Validation Errors**
    - Run the YAML validator
    - Check for proper indentation
    - Verify all required fields are present
 
-3. **Classification Issues**
+4. **Classification Issues**
    - Review the prompt.txt file
    - Adjust category criteria if needed
    - Add more specific examples to the coding scheme
