@@ -20,7 +20,8 @@ Then open **http://127.0.0.1:5001**. Enter your OpenAI API key in the web form â
 2. After that, just **double-click**:
    - **Windows:** `start.bat`
    - **Mac:** `start.command`
-3. Enter your API key in the web form when prompted.
+3. Wait for the server to start (it can take up to a minute). The browser will open automatically.
+4. Enter your API key in the web form when prompted.
 
 ### Option 3: Traditional setup
 1. Run `bash scripts/setup.sh` (or install Python + dependencies manually)
