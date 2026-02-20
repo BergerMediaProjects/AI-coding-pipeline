@@ -10,6 +10,15 @@ if [ ! -d ".venv" ]; then
     exit 1
 fi
 
-open http://127.0.0.1:5001
 source .venv/bin/activate
-exec python web_interface/app.py
+echo "Starting web server at http://127.0.0.1:5001"
+echo "(Browser will open automatically. Press Ctrl+C to stop the server.)"
+# Open browser after 2 seconds (gives server time to start)
+(sleep 2 && open http://127.0.0.1:5001) &
+python web_interface/app.py
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "Server stopped. Check the error above."
+    read -p "Press Enter to close..."
+    exit 1
+fi
