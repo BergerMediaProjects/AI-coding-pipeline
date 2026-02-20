@@ -201,7 +201,8 @@
                             <div class="col-md-4">
                                 <div class="form-check">
                                     <input class="form-check-input category-checkbox" type="checkbox" 
-                                           id="category_{{ loop.index }}" name="categories" value="{{ category }}">
+                                           id="category_{{ loop.index }}" name="categories" value="{{ category }}"
+                                           {% if category in category_children %}data-children="{{ category_children[category] | tojson }}"{% endif %}>
                                     <label class="form-check-label" for="category_{{ loop.index }}">
                                         {{ details.display_name }}
                                     </label>
@@ -256,6 +257,22 @@
     <script>
         let statusPollingInterval = null;
         let isCancelled = false;
+
+        // Parent category: checking/unchecking cascades to sub-categories
+        document.getElementById('categoryList').addEventListener('change', (e) => {
+            const cb = e.target;
+            if (!cb.matches('.category-checkbox') || !cb.dataset.children) return;
+            try {
+                const childKeys = JSON.parse(cb.dataset.children);
+                document.querySelectorAll('input[name="categories"]').forEach(childCb => {
+                    if (childKeys.includes(childCb.value)) {
+                        childCb.checked = cb.checked;
+                    }
+                });
+            } catch (err) {
+                console.warn('Could not parse category children:', err);
+            }
+        });
 
         // Add restart button handler
         document.getElementById('restartButton').addEventListener('click', async () => {
