@@ -9,7 +9,7 @@ if project_home not in sys.path:
 # Load environment variables
 from dotenv import load_dotenv
 env_path = os.path.join(project_home, '.env')
-load_dotenv(env_path, override=True)  # Use override=True to ensure the values are set
+load_dotenv(env_path, override=True, encoding='utf-8-sig')  # utf-8-sig handles BOM
 
 # Verify API key is loaded
 api_key = os.getenv("OPENAI_API_KEY")

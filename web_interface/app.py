@@ -26,7 +26,8 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 # Load environment variables before run_pipeline (needs OPENAI_API_KEY)
-load_dotenv()
+# encoding='utf-8-sig' handles BOM that some editors add (fixes "could not parse" on Mac)
+load_dotenv(encoding='utf-8-sig')
 
 from utils.yaml_generator import YAMLGenerator
 from utils.fix_yaml_format import fix_yaml_format
