@@ -11,9 +11,6 @@ from datetime import datetime
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import json
-from utils.yaml_generator import YAMLGenerator
-from utils.fix_yaml_format import fix_yaml_format
-from utils.validate_yaml import validate_yaml
 import signal
 import logging
 from logging.handlers import RotatingFileHandler
@@ -23,18 +20,17 @@ import subprocess
 import getpass
 import threading
 
-# Load environment variables from .env file
+# Add project root to path BEFORE importing project modules
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+# Load environment variables before run_pipeline (needs OPENAI_API_KEY)
 load_dotenv()
 
-# Get the root directory path
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# Add the project root directory to the Python path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(project_root)
-
-# Add the parent directory to the Python path
-sys.path.append(root_dir)
+from utils.yaml_generator import YAMLGenerator
+from utils.fix_yaml_format import fix_yaml_format
+from utils.validate_yaml import validate_yaml
 from run_pipeline import TrainingDataClassifier, CONFIG
 
 # Verify API key is loaded

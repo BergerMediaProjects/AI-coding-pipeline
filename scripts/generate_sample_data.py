@@ -16,29 +16,21 @@ except ImportError:
     print("Error: pandas is required. Run: pip install -r requirements.txt")
     sys.exit(1)
 
+# Sample data aligned with prompt template (Fortbildungsbeschreibung für Dozierende)
 SAMPLE_DATA = [
     {
-        "title": "Einführung in digitale Lehre",
+        "title": "Designing Effective Moodle Courses for Higher Education",
         "description": (
-            "In diesem Seminar lernen Sie die Grundlagen digitaler Lehrformate kennen. "
-            "Themen: Lernplattformen, Videokonferenzen, digitale Prüfungsformate. "
-            "Zielgruppe: Dozierende aller Fachrichtungen."
-        ),
-    },
-    {
-        "title": "Workshop: Aktivierende Methoden in der Hochschullehre",
-        "description": (
-            "Praktischer Workshop zu Methoden, die Studierende aktiv einbinden. "
-            "Arbeit in Kleingruppen, Erprobung von Techniken. "
-            "Angebot der Hochschuldidaktik."
-        ),
-    },
-    {
-        "title": "Coaching für neue Dozierende",
-        "description": (
-            "Individuelle Beratung und Begleitung für neue Lehrende. "
-            "Reflexion der eigenen Lehrpraxis, kollegialer Austausch. "
-            "Einzelcoaching oder Kleingruppen."
+            "This professional development course supports higher education teachers in designing, "
+            "structuring, and implementing pedagogically sound Moodle courses. Participants will learn "
+            "how to translate didactic concepts into functional Moodle environments that support student "
+            "engagement, self-regulated learning, and assessment.\n"
+            "The course combines instructional design principles with hands-on practice in Moodle. "
+            "Participants will explore core Moodle functionalities (e.g., activities, resources, "
+            "assessments, feedback, and analytics) and learn how to align them with learning objectives, "
+            "constructive alignment, and evidence-based teaching strategies.\n"
+            "By the end of the course, participants will have developed a prototype Moodle course or a "
+            "redesigned course unit that is ready for implementation in their own teaching context."
         ),
     },
 ]

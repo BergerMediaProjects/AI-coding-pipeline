@@ -9,12 +9,13 @@ This pipeline analyzes course descriptions using AI to classify them according t
 1. **Install Python** (3.8 or newer) — [python.org](https://www.python.org/downloads/)
 2. **Open a terminal** in this project folder and run:
    ```bash
-   pip install -r requirements.txt
-   cp .env.example .env
+   bash scripts/setup.sh
    ```
+   This creates a virtual environment and installs dependencies. (On Linux, you must use a venv — system pip will not work.)
 3. **Edit `.env`** and add your OpenAI API key: `OPENAI_API_KEY=sk-your-key-here`
-4. **Start the web interface:**
+4. **Start the web interface** (activate the venv first if the script didn't leave you in it):
    ```bash
+   source .venv/bin/activate   # Linux/Mac
    python web_interface/app.py
    ```
 5. **Open http://127.0.0.1:5001** in your browser
@@ -55,8 +56,10 @@ This creates a virtual environment, installs dependencies, and generates sample 
 
 **Option B — Manual setup:**
 1. Clone the repository
-2. Install dependencies:
+2. Create a virtual environment and install dependencies (required on Linux — system pip is restricted):
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Linux/Mac; on Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 3. Set up your OpenAI API key. Either:
@@ -140,8 +143,9 @@ You can run the pipeline through a web UI instead of the command line.
 
 **Start the web server:**
 ```bash
-python web_interface/app.py
+bash scripts/run_web.sh
 ```
+(Or `source .venv/bin/activate` then `python web_interface/app.py`)
 
 Then open **http://127.0.0.1:5001** in your browser.
 
@@ -308,22 +312,38 @@ Your course data file (Excel or CSV) must have these columns:
 
 Common issues and solutions:
 
-1. **"Data file not found"**
+1. **"externally-managed-environment" or "pip install" fails**
+   - Linux restricts system-wide pip. Use a virtual environment:
+     ```bash
+     python3 -m venv .venv
+     source .venv/bin/activate
+     pip install -r requirements.txt
+     ```
+   - Or run `bash scripts/setup.sh` which does this automatically.
+
+2. **"ModuleNotFoundError: No module named 'flask'"**
+   - You're using system Python instead of the venv. Run `bash scripts/run_web.sh` (which activates the venv automatically), or:
+     ```bash
+     source .venv/bin/activate
+     python web_interface/app.py
+     ```
+
+3. **"Data file not found"**
    - Use the sample: copy `data/training_data_sample.xlsx` to `data/training_data.xlsx`
    - Or upload your file via the web interface
    - Ensure your Excel/CSV has `title` and `description` columns
 
-2. **File Not Found Errors**
+4. **File Not Found Errors**
    - Check if all required directories exist
    - Ensure input files are in the correct locations
    - Verify file permissions
 
-3. **YAML Validation Errors**
+5. **YAML Validation Errors**
    - Run the YAML validator
    - Check for proper indentation
    - Verify all required fields are present
 
-4. **Classification Issues**
+6. **Classification Issues**
    - Review the prompt.txt file
    - Adjust category criteria if needed
    - Add more specific examples to the coding scheme

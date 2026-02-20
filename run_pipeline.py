@@ -23,7 +23,7 @@ from sklearn.metrics import cohen_kappa_score
 import os
 import json
 from typing import Dict, List, AsyncGenerator, Optional, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
@@ -139,13 +139,35 @@ class ValidationResult(BaseModel):
     confidence_level: ConfidenceLevel = Field(..., description="Interpreted confidence level")
     reasoning: str = Field(..., description="Classification reasoning")
 
+def _simplify_category_name(name: str) -> str:
+    """Remove numbering pattern from category names (matches fix_yaml_format logic)."""
+    patterns = [
+        r'^\d+\.\d+\.?\d*\s*[a-z]?\s*',
+        r'^\.\d+\s*',
+        r'^\d+\s+'
+    ]
+    result = name
+    for pattern in patterns:
+        result = re.sub(pattern, '', result)
+    return result.strip() or name
+
+
 class CodingSchemeCategory(BaseModel):
     """Structure for a single category in the coding scheme"""
     display_name: str
-    simplified_name: str
+    simplified_name: Optional[str] = None  # Optional; derived from display_name when missing
     criteria: str
     examples: List[str]
     values: str
+
+    @model_validator(mode='before')
+    @classmethod
+    def ensure_simplified_name(cls, data: Any) -> Any:
+        """Populate simplified_name from display_name when missing (for coding_scheme_imported.yml)."""
+        if isinstance(data, dict) and 'simplified_name' not in data and 'display_name' in data:
+            data = {**data, 'simplified_name': _simplify_category_name(data['display_name'])}
+        return data
+
 
 class CodingScheme(BaseModel):
     """Structure for coding scheme"""
