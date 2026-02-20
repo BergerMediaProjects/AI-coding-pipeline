@@ -50,7 +50,6 @@ This pipeline helps researchers and educators analyze course descriptions to ide
    - Get confidence scores for each classification
    - Review AI reasoning for each decision
    - Validate YAML structure automatically
-   - Cross-check results with manual coding
 
 ## Setup
 
