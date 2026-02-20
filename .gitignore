@@ -1,0 +1,37 @@
+# Environment and secrets
+.env
+
+# Logs
+data/log/
+*.log
+
+# Results (regenerated at runtime)
+data/results/
+*.xlsx
+*.csv
+
+# Temporary uploads
+data/temp_uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# Virtual environment
+venv/
+myenv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store

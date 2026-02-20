@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Pipeline Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+    <style>
+        .dropzone {
+            border: 2px dashed #0087F7;
+            border-radius: 5px;
+            background: white;
+            min-height: 150px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .category-checkbox {
+            margin-right: 10px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.3s ease;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: center;
+            text-decoration: none;
+            vertical-align: middle;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+            margin-right: 0.5rem;
+        }
+        .btn-primary {
+            color: #fff;
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .btn-danger {
+            color: #fff;
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-warning {
+            color: #212529;
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+        .btn-success {
+            color: #fff;
+            background-color: #198754;
+            border-color: #198754;
+        }
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+        }
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .alert-warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+        }
+        .card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            word-wrap: break-word;
+            background-color: #fff;
+            background-clip: border-box;
+            border: 1px solid rgba(0,0,0,.125);
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+        }
+        .card-header {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 0;
+            background-color: rgba(0,0,0,.03);
+            border-bottom: 1px solid rgba(0,0,0,.125);
+        }
+        .card-body {
+            flex: 1 1 auto;
+            padding: 1.25rem;
+        }
+        .status-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+        }
+        .status-message {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        .current-task {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">AI Pipeline Interface</h1>
+        
+        <!-- Admin Controls -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Admin Controls</h5>
+            </div>
+            <div class="card-body">
+                <button type="button" id="restartButton" class="btn btn-warning">
+                    <span id="restartButtonText">Restart Service</span>
+                </button>
+                <small class="form-text text-muted d-block mt-2">
+                    Use this button to restart the web service if you experience issues with category display or other functionality.
+                </small>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Upload Files</h5>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="dataFile" class="form-label">Training Data (Excel)</label>
+                        <input type="file" class="form-control" id="dataFile" name="data_file" accept=".xlsx">
+                        <small class="form-text text-muted">If not provided, the default file from data/training_data.xlsx will be used.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="codingSchemeFile" class="form-label">Coding Scheme (DOCX)</label>
+                        <input type="file" class="form-control" id="codingSchemeFile" name="coding_scheme_file" accept=".docx">
+                        <small class="form-text text-muted">If not provided, the default file from data/DOC_coding_scheme/doc_cs.docx will be used.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promptFile" class="form-label">Prompt Template (Text)</label>
+                        <input type="file" class="form-control" id="promptFile" name="prompt_file" accept=".txt">
+                        <small class="form-text text-muted">If not provided, the default file from data/prompt.txt will be used.</small>
+                    </div>
+                    
+                    <!-- Category Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Categories</label>
+                        <div class="row" id="categoryList">
+                            {% for category, details in categories.items() %}
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" 
+                                           id="category_{{ loop.index }}" name="categories" value="{{ category }}">
+                                    <label class="form-check-label" for="category_{{ loop.index }}">
+                                        {{ details.display_name }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Run Pipeline</button>
+                        <button type="button" id="cancelButton" class="btn btn-danger" style="display: none;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="status" class="alert" style="display: none;"></div>
+        
+        <!-- Status display section -->
+        <div id="pipelineStatus" class="card mb-4" style="display: none;">
+            <div class="card-header">
+                <h5>Pipeline Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="status-container">
+                    <div class="status-message">
+                        <strong>Status:</strong> <span id="statusMessage">Initializing...</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressBar" class="progress-bar-fill" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span id="progressText" class="text-muted">0%</span>
+                    </div>
+                    <div id="currentTask" class="current-task"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="card" style="display: none;">
+            <div class="card-header">
+                <h5>Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="resultsContent"></div>
+                <a id="downloadLink" href="#" class="btn btn-success" style="display: none;">Download Results</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let statusPollingInterval = null;
+        let isCancelled = false;
+
+        // Add restart button handler
+        document.getElementById('restartButton').addEventListener('click', async () => {
+            const button = document.getElementById('restartButton');
+            const buttonText = document.getElementById('restartButtonText');
+            
+            // Confirm restart
+            if (!confirm('Are you sure you want to restart the service? This will temporarily disconnect all users.')) {
+                return;
+            }
+            
+            // Disable button and show loading state
+            button.disabled = true;
+            buttonText.textContent = 'Restarting...';
+            
+            try {
+                const response = await fetch('/restart_service', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Show success message
+                    const statusDiv = document.getElementById('status');
+                    statusDiv.style.display = 'block';
+                    statusDiv.className = 'alert alert-success';
+                    statusDiv.textContent = data.message + ' The page will automatically refresh in 5 seconds...';
+                    
+                    // Refresh page after 5 seconds
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 5000);
+                } else {
+                    // Show error message
+                    const statusDiv = document.getElementById('status');
+                    statusDiv.style.display = 'block';
+                    statusDiv.className = 'alert alert-danger';
+                    statusDiv.textContent = data.message;
+                    
+                    // Re-enable button
+                    button.disabled = false;
+                    buttonText.textContent = 'Restart Service';
+                }
+            } catch (error) {
+                console.error('Error restarting service:', error);
+                
+                // Show error message
+                const statusDiv = document.getElementById('status');
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.textContent = 'Error restarting service: ' + error.message;
+                
+                // Re-enable button
+                button.disabled = false;
+                buttonText.textContent = 'Restart Service';
+            }
+        });
+
+        // Add cancel button handler
+        document.getElementById('cancelButton').addEventListener('click', async () => {
+            if (!isCancelled) {
+                isCancelled = true;
+                try {
+                    const response = await fetch('/cancel_pipeline', { method: 'POST' });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        const statusDiv = document.getElementById('status');
+                        statusDiv.style.display = 'block';
+                        statusDiv.className = 'alert alert-warning';
+                        statusDiv.textContent = 'Pipeline cancellation requested...';
+                    }
+                } catch (error) {
+                    console.error('Error cancelling pipeline:', error);
+                }
+            }
+        });
+
+        function updateStatusDisplay(status) {
+            console.log('Updating status display:', status); // Debug log
+            
+            const statusDiv = document.getElementById('status');
+            const pipelineStatusDiv = document.getElementById('pipelineStatus');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const statusMessage = document.getElementById('statusMessage');
+            const currentTask = document.getElementById('currentTask');
+            const cancelButton = document.getElementById('cancelButton');
+            
+            // Always show status sections while pipeline is running or initializing
+            if (status.is_running || status.status_message === 'Initializing pipeline...') {
+                pipelineStatusDiv.style.display = 'block';
+                cancelButton.style.display = 'inline-block';
+                
+                // Update progress
+                progressBar.style.width = `${status.progress}%`;
+                progressText.textContent = `${status.progress}%`;
+                
+                // Update status message with more detail
+                let statusText = status.status_message || 'Initializing...';
+                if (status.current_entry > 0 && status.total_entries > 0) {
+                    statusText += ` (Entry ${status.current_entry} of ${status.total_entries})`;
+                }
+                statusMessage.textContent = statusText;
+                
+                // Update current task with detailed information
+                if (status.current_entry > 0 && status.total_entries > 0) {
+                    currentTask.textContent = `Processing category: ${status.current_category || 'Initializing...'}`;
+                } else {
+                    currentTask.textContent = status.status_message || 'Initializing...';
+                }
+            } else {
+                pipelineStatusDiv.style.display = 'none';
+                cancelButton.style.display = 'none';
+            }
+            
+            // Handle errors
+            if (status.error) {
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.textContent = status.error;
+                stopStatusPolling();
+            }
+            
+            // Only stop polling if pipeline is explicitly not running and not initializing
+            if (!status.is_running && status.status_message !== 'Initializing pipeline...') {
+                stopStatusPolling();
+                cancelButton.style.display = 'none';
+            }
+        }
+
+        function startStatusPolling() {
+            if (statusPollingInterval) return;
+            
+            // Start polling immediately
+            const pollStatus = async () => {
+                try {
+                    const response = await fetch('/pipeline_status');
+                    const status = await response.json();
+                    console.log('Received status:', status); // Debug log
+                    updateStatusDisplay(status);
+                    
+                    // Continue polling if pipeline is running or initializing
+                    if (status.is_running || status.status_message === 'Initializing pipeline...') {
+                        statusPollingInterval = setTimeout(pollStatus, 1000);
+                    } else {
+                        stopStatusPolling();
+                    }
+                } catch (error) {
+                    console.error('Error polling status:', error);
+                    // Retry after error
+                    statusPollingInterval = setTimeout(pollStatus, 1000);
+                }
+            };
+            
+            // Start initial poll
+            pollStatus();
+        }
+
+        function stopStatusPolling() {
+            if (statusPollingInterval) {
+                clearTimeout(statusPollingInterval);
+                statusPollingInterval = null;
+            }
+        }
+
+        // Add form submission handler
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const resultsContent = document.getElementById('resultsContent');
+            const downloadLink = document.getElementById('downloadLink');
+            const pipelineStatusDiv = document.getElementById('pipelineStatus');
+            const cancelButton = document.getElementById('cancelButton');
+            
+            // Reset cancellation state
+            isCancelled = false;
+            
+            // Show status sections immediately
+            statusDiv.style.display = 'block';
+            pipelineStatusDiv.style.display = 'block';
+            statusDiv.className = 'alert alert-info';
+            statusDiv.textContent = 'Running pipeline...';
+            
+            // Show cancel button immediately
+            cancelButton.style.display = 'inline-block';
+            
+            // Start status polling
+            startStatusPolling();
+            
+            // Get selected categories
+            const selectedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (selectedCategories.length === 0) {
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.textContent = 'Please select at least one category';
+                stopStatusPolling();
+                cancelButton.style.display = 'none';
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            formData.append('selected_categories', JSON.stringify(selectedCategories));
+            
+            try {
+                const response = await fetch('/run_pipeline', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                console.log('Pipeline response:', data); // Debug log
+                
+                if (data.status === 'success') {
+                    statusDiv.className = 'alert alert-success';
+                    statusDiv.textContent = data.message;
+                    
+                    resultsDiv.style.display = 'block';
+                    resultsContent.textContent = JSON.stringify(data.result, null, 2);
+                    
+                    if (data.result_file) {
+                        downloadLink.style.display = 'block';
+                        downloadLink.href = `/download_results/${data.result_file}`;
+                    }
+                } else if (data.status === 'cancelled') {
+                    statusDiv.className = 'alert alert-warning';
+                    statusDiv.textContent = data.message;
+                } else {
+                    statusDiv.className = 'alert alert-danger';
+                    statusDiv.textContent = data.message;
+                }
+            } catch (error) {
+                console.error('Pipeline error:', error); // Debug log
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.textContent = 'Error running pipeline: ' + error.message;
+            } finally {
+                stopStatusPolling();
+                cancelButton.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 
